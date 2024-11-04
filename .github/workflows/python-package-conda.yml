@@ -27,3 +27,21 @@ jobs:
           USERNAME: ${{ secrets.USERNAME }}
           PASSWORD: ${{ secrets.PASSWORD }}
         run: python run.py
+        
+      #生成日志文件
+      - name: Generate log file
+        run: |
+          echo "Build completed at $(date)" > build_log.txt
+          echo "Build details:" >> build_log.txt
+          echo "Branch: ${{ github.ref }}" >> build_log.txt
+          echo "Commit SHA: ${{ github.sha }}" >> build_log.txt
+          echo "Commit Message: ${{ github.event.head_commit.message }}" >> build_log.txt
+
+      #将日志文件提交回仓库
+      - name: Commit log file
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add build_log.txt
+          git commit -m "Update build log" || true
+          git push origin master
