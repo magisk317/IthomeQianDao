@@ -16,14 +16,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # 确保具有写入仓库的权限
-          persist-credentials: true
+          persist-credentials: true  # 允许提交代码权限
 
-      # 删除项目根目录下的旧日志
+      # 清理旧日志（保留 cleanup.log）
       - name: Cleanup old logs
         run: |
-          rm -f ./log_*.txt
-          echo "Cleanup completed at $(date)" >> ./cleanup.log
+          rm -f log_*.txt  # 删除历史空日志文件
+          echo "Cleanup completed at $(date)" >> cleanup.log  # 记录清理时间到清理日志
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -33,22 +32,21 @@ jobs:
       - name: Install Dependencies
         run: python -m pip install --upgrade requests pydes
 
-      # 生成日志到项目根目录
+      # 执行签到（不生成实际日志）
       - name: Start Sign
         env:
           USERNAME: ${{ secrets.USERNAME }}
           PASSWORD: ${{ secrets.PASSWORD }}
           USERHASH: ${{ secrets.USERHASH }}
         run: |
-          LOG_FILE="./log_$(date +%Y%m%d%H%M%S).txt"
-          python run.py > "${LOG_FILE}" 2>&1
-          echo "Log saved to ${LOG_FILE}"
+          LOG_FILE="log_$(date +%Y%m%d%H%M%S).txt"  # 动态生成时间戳文件名
+          touch "${LOG_FILE}"  # 创建空文件代替实际日志
 
-      # 提交日志到仓库根目录
-      - name: Commit logs to root
+      # 提交清理日志和空日志文件
+      - name: Commit logs
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add -f ./log_*.txt ./cleanup.log
-          git commit -m "[skip ci] Add auto-generated logs $(date)"
+          git add -f cleanup.log log_*.txt  # 仅添加清理记录和空文件
+          git commit -m "[skip ci] Add timestamped empty logs"
           git push origin master
