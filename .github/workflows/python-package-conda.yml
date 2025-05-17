@@ -15,15 +15,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      # 删除旧日志（保留最后一次运行的日志）
+      - name: Cleanup old logs
+        run: |
+          rm -f log_*.txt  # 删除所有历史日志文件
+          echo "Cleanup completed at $(date)" >> cleanup.log  # 记录清理操作
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+
       - name: Install Dependencies
         run: python -m pip install --upgrade requests pydes
+
+      # 执行签到并写入带时间戳的日志文件
       - name: Start Sign
         env:
           USERNAME: ${{ secrets.USERNAME }}
           PASSWORD: ${{ secrets.PASSWORD }}
           USERHASH: ${{ secrets.USERHASH }}
-        run: python run.py
+        run: |
+          LOG_FILE="log_$(date +%Y%m%d%H%M%S).txt"
+          python run.py > "${LOG_FILE}" 2>&1
+          echo "Log saved to ${LOG_FILE}"
+
+      # 上传日志文件作为构件
+      - name: Upload Log Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ithome-logs
+          path: log_*.txt
